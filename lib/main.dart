@@ -6,16 +6,29 @@ import 'dart:ui' as ui show instantiateImageCodec, Codec;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-void main() => runApp(new MyApp());
+void main() => runApp(new RevspaceApp());
 
 List<RevImage> images = new List<RevImage>();
-MyAppState myAppState;
+SelectPhotosState selectPhotosState;
 
-class MyApp extends StatefulWidget {
+class RevspaceApp extends StatelessWidget {
   @override
-  MyAppState createState() {
-    myAppState = new MyAppState();
-    return myAppState;
+  Widget build(BuildContext context) {
+    return
+
+      new MaterialApp(
+        title: 'RevSpace App',
+        theme: new ThemeData(primarySwatch: Colors.lightGreen),
+        home: new SelectPhotos(),
+      );
+  }
+}
+
+class SelectPhotos extends StatefulWidget {
+  @override
+  SelectPhotosState createState() {
+    selectPhotosState = new SelectPhotosState();
+    return selectPhotosState;
   }
 }
 
@@ -55,7 +68,7 @@ class RevFileImage extends FileImage {
     try {
       imageCodec = await ui.instantiateImageCodec(bytes);
     } catch (e) {
-      myAppState.setState(() {
+      selectPhotosState.setState(() {
         images.remove(_ri);
         Scaffold.of(_context).showSnackBar(new SnackBar(content: new Text('That is not a valid photo.')));
       });
@@ -74,105 +87,97 @@ class RevFileImage extends FileImage {
   }
 }
 
-class MyAppState extends State<MyApp> {
-
-
+class SelectPhotosState extends State<SelectPhotos> {
   @override
   Widget build(BuildContext context) {
-    final title = 'Select photos';
-
-    return new MaterialApp(
-      title: title,
-      theme: new ThemeData(primarySwatch: Colors.lightGreen),
-      home: new Scaffold(
-        appBar: new AppBar(
-          title: new Text(title),
-          actions: [
-            new IconButton(
-              onPressed: () => _onImageButtonPressed(ImageSource.gallery),
-              tooltip: 'Add photo from gallery',
-              icon: new Icon(Icons.add_photo_alternate),
-            ),
-            new IconButton(
-              onPressed: () => _onImageButtonPressed(ImageSource.camera),
-              tooltip: 'Add photo from camera',
-              icon: new Icon(Icons.add_a_photo),
-            ),
-            new IconButton(
-              onPressed: () => _onSendButtonPressed(),
-              tooltip: 'Send to RevSpace wiki',
-              color: (images.length > 0) ? Colors.black : Colors.grey,
-              icon: new Icon(Icons.send),
-            ),
-          ],
-        ),
-        body: new ListView.builder(
-            itemCount: images.length,
-            itemBuilder: (context, index) {
-              return new Card(
-                margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: new Row(children: [
-                  new RotatedBox(
-                    quarterTurns: images[index].rotation,
-                    child: new FadeInImage(
-                        placeholder: new AssetImage('assets/loading.gif'),
-                        image: new RevFileImage(images[index], context),
-                        width: 144.0,
-                        height: 144.0,
-                        fit: BoxFit.cover),
-                  ),
-                  new Flexible(
-                    child: new Column(children: [
-                      new TextField(
-                        decoration: const InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          labelText: 'Description',
-                        ),
-                        maxLines: 3,
-                      ),
-                      new Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          new IconButton(
-                            iconSize: 32.0,
-                            onPressed: () {
-                              setState(() {
-                                images[index].rotation++;
-                              });
-                            },
-                            icon: new Icon(Icons.rotate_right, color: Theme
-                                .of(context)
-                                .primaryColor),
-                          ),
-                          new IconButton(
-                            iconSize: 32.0,
-                            onPressed: () {
-                              setState(() {
-                                images[index].rotation--;
-                              });
-                            },
-                            icon: new Icon(Icons.rotate_left, color: Theme
-                                .of(context)
-                                .primaryColor),
-                          ),
-                          new IconButton(
-                            iconSize: 32.0,
-                            onPressed: () {
-                              setState(() {
-                                images.removeAt(index);
-                              });
-                            },
-                            icon: new Icon(Icons.delete, color: Colors.red),
-                          ),
-                        ],
-                      )
-                    ]),
-                  ),
-                ]),
-              );
-            }),
+    return new Scaffold(
+      appBar: new AppBar(
+        title: new Text('Select Photos'),
+        actions: [
+          new IconButton(
+            onPressed: () => _onImageButtonPressed(ImageSource.gallery),
+            tooltip: 'Add photo from gallery',
+            icon: new Icon(Icons.add_photo_alternate),
+          ),
+          new IconButton(
+            onPressed: () => _onImageButtonPressed(ImageSource.camera),
+            tooltip: 'Add photo from camera',
+            icon: new Icon(Icons.add_a_photo),
+          ),
+          new IconButton(
+            onPressed: () => _onSendButtonPressed(),
+            tooltip: 'Send to RevSpace wiki',
+            color: (images.length > 0) ? Colors.black : Colors.grey,
+            icon: new Icon(Icons.send),
+          ),
+        ],
       ),
+      body: new ListView.builder(
+          itemCount: images.length,
+          itemBuilder: (context, index) {
+            return new Card(
+              margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: new Row(children: [
+                new RotatedBox(
+                  quarterTurns: images[index].rotation,
+                  child: new FadeInImage(
+                      placeholder: new AssetImage('assets/loading.gif'),
+                      image: new RevFileImage(images[index], context),
+                      width: 144.0,
+                      height: 144.0,
+                      fit: BoxFit.cover),
+                ),
+                new Flexible(
+                  child: new Column(children: [
+                    new TextField(
+                      decoration: const InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        labelText: 'Description',
+                      ),
+                      maxLines: 3,
+                    ),
+                    new Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        new IconButton(
+                          iconSize: 32.0,
+                          onPressed: () {
+                            setState(() {
+                              images[index].rotation++;
+                            });
+                          },
+                          icon: new Icon(Icons.rotate_right, color: Theme
+                              .of(context)
+                              .primaryColor),
+                        ),
+                        new IconButton(
+                          iconSize: 32.0,
+                          onPressed: () {
+                            setState(() {
+                              images[index].rotation--;
+                            });
+                          },
+                          icon: new Icon(Icons.rotate_left, color: Theme
+                              .of(context)
+                              .primaryColor),
+                        ),
+                        new IconButton(
+                          iconSize: 32.0,
+                          onPressed: () {
+                            setState(() {
+                              images.removeAt(index);
+                            });
+                          },
+                          icon: new Icon(Icons.delete, color: Colors.red),
+                        ),
+                      ],
+                    )
+                  ]),
+                ),
+              ]),
+            );
+          }),
     );
   }
 
