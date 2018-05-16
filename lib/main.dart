@@ -182,7 +182,6 @@ class SelectPhotosState extends State<SelectPhotos> {
   }
 
   void _onSendButtonPressed() {
-    print('Send button pressed');
     Navigator.of(context).push(
         new MaterialPageRoute(
             builder: (context) {
@@ -190,7 +189,7 @@ class SelectPhotosState extends State<SelectPhotos> {
                 appBar: new AppBar(
                   title: new Text('Send'),
                 ),
-                body: new CircularProgressIndicator(),
+                body: new Text(images[0].file.path),
               );
             }
         )
