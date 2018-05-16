@@ -10,13 +10,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-void main() => runApp(new RevspaceApp());
+void main() => runApp(new RevSpaceApp());
 
 List<RevImage> images = new List<RevImage>();
 SelectPhotosState selectPhotosState;
 final FlutterSecureStorage secureStorage = new FlutterSecureStorage();
 
-class RevspaceApp extends StatelessWidget {
+class RevSpaceApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
