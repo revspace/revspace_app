@@ -7,7 +7,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'settings.dart';
 
@@ -221,7 +220,7 @@ class SelectPhotosState extends State<SelectPhotos> {
   void _onSettingsButtonPressed() {
     Navigator.of(context).push(
       new MaterialPageRoute(
-          builder: (context) => SettingsScaffoldFactory.settingsScaffold()),
+          builder: (context) => RevSettings.getScaffold()),
     );
   }
 
