@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui show instantiateImageCodec, Codec;
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -104,10 +103,10 @@ class RevFileImage extends FileImage {
 }
 
 class SelectPhotosState extends State<SelectPhotos> {
+  final GlobalKey<FormState> _selectPhotosFormKey = new GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
-    final GlobalKey<FormState> _selectPhotosFormKey = new GlobalKey<FormState>();
-
     return new Scaffold(
       appBar: new AppBar(
         title: new Text('Select Photos'),
@@ -150,6 +149,16 @@ class SelectPhotosState extends State<SelectPhotos> {
                       maxLines: 3,
                       initialValue: images[index].description,
                       onSaved: (value) => images[index].description = value,
+                      validator: (value) {
+                        if (value.length == 0) {
+                          return 'Please enter a description.';
+                        } else if (value.length == 1) {
+                          return 'Hey, put in some effort. Please?';
+                        } else if (value.length < 10) {
+                          return 'Come on, ${value.length} characters is not a description!';
+                        }
+                        return null;
+                      },
                     ),
                     new Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -225,12 +234,15 @@ class SelectPhotosState extends State<SelectPhotos> {
 
 
   void _onSendButtonPressed() {
-    Navigator.of(context).push(
-        new MaterialPageRoute(
-          builder: (context) => RevSend.getScaffold(images),
-        )
-    );
+    if (_selectPhotosFormKey.currentState.validate()) {
+      Navigator.of(context).push(
+          new MaterialPageRoute(
+            builder: (context) => RevSend.getScaffold(images),
+          )
+      );
+    }
   }
+
 
   void _onSettingsButtonPressed() async {
     final FlutterSecureStorage secureStorage = new FlutterSecureStorage();
