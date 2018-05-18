@@ -10,6 +10,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'settings.dart';
+import 'send.dart';
 
 void main() => runApp(new RevSpaceApp());
 
@@ -28,7 +29,6 @@ class RevSpaceApp extends StatelessWidget {
   }
 }
 
-
 class SelectPhotos extends StatefulWidget {
   @override
   SelectPhotosState createState() {
@@ -40,8 +40,13 @@ class SelectPhotos extends StatefulWidget {
 class RevImage {
   File file;
   int rotation;
+  String description;
 
   RevImage(this.file, this.rotation);
+
+  String toString() {
+    return 'RevImage [${file.uri.toString()}; $rotation; $description]\n';
+  }
 }
 
 class RevFileImage extends FileImage {
@@ -69,13 +74,19 @@ class RevFileImage extends FileImage {
     final Uint8List bytes = await file.readAsBytes();
     if (bytes.lengthInBytes == 0) return null;
 
+
     ui.Codec imageCodec;
     try {
       imageCodec = await ui.instantiateImageCodec(bytes);
     } catch (e) {
+      print('filename: ${file.path}');
+      print('num_bytes: ${bytes.length}');
       selectPhotosState.setState(() {
         images.remove(_ri);
-        Scaffold.of(_context).showSnackBar(new SnackBar(content: new Text('That is not a valid photo.')));
+        Scaffold.of(_context).showSnackBar(new SnackBar(
+          duration: new Duration(seconds: 4),
+          content: new Text('That is not a valid photo.'),
+        ));
       });
       // We need to clear the cache because if we don't and the user selects the same invalid photo twice
       // then the photo won't ever load using this method and we won't catch the exception.
@@ -95,6 +106,8 @@ class RevFileImage extends FileImage {
 class SelectPhotosState extends State<SelectPhotos> {
   @override
   Widget build(BuildContext context) {
+    final GlobalKey<FormState> _selectPhotosFormKey = new GlobalKey<FormState>();
+
     return new Scaffold(
       appBar: new AppBar(
         title: new Text('Select Photos'),
@@ -106,7 +119,11 @@ class SelectPhotosState extends State<SelectPhotos> {
           ),
         ],
       ),
-      body: new ListView.builder(
+      body: new Form(
+        key: _selectPhotosFormKey,
+        onChanged: () => _selectPhotosFormKey.currentState.save(),
+        child:
+        new ListView.builder(
           padding: const EdgeInsets.only(bottom: 32.0),
           itemCount: images.length,
           itemBuilder: (context, index) {
@@ -124,13 +141,15 @@ class SelectPhotosState extends State<SelectPhotos> {
                 ),
                 new Flexible(
                   child: new Column(children: [
-                    new TextField(
+                    new TextFormField(
                       decoration: const InputDecoration(
                         filled: true,
                         fillColor: Colors.white,
                         labelText: 'Description',
                       ),
                       maxLines: 3,
+                      initialValue: images[index].description,
+                      onSaved: (value) => images[index].description = value,
                     ),
                     new Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -171,21 +190,23 @@ class SelectPhotosState extends State<SelectPhotos> {
                 ),
               ]),
             );
-          }),
+          },
+        ),
+      ),
       bottomNavigationBar: new BottomAppBar(
         color: Theme
             .of(context)
             .primaryColor,
         hasNotch: true,
         child: new Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
+              new SizedBox(width: 8.0, height: 56.0),
               new IconButton(
                 onPressed: () => _onImageButtonPressed(ImageSource.gallery),
                 tooltip: 'Add photo from gallery',
                 icon: new Icon(Icons.add_photo_alternate),
               ),
-              new SizedBox(width: 20.0),
               new IconButton(
                 onPressed: () => _onImageButtonPressed(ImageSource.camera),
                 tooltip: 'Add photo from camera',
@@ -206,14 +227,7 @@ class SelectPhotosState extends State<SelectPhotos> {
   void _onSendButtonPressed() {
     Navigator.of(context).push(
         new MaterialPageRoute(
-            builder: (context) {
-              return new Scaffold(
-                appBar: new AppBar(
-                  title: new Text('Send'),
-                ),
-                body: new Text(images[0].file.path),
-              );
-            }
+          builder: (context) => RevSend.getScaffold(images),
         )
     );
   }
@@ -227,9 +241,7 @@ class SelectPhotosState extends State<SelectPhotos> {
 
     Navigator.of(context).push(
       new MaterialPageRoute(
-        builder: (context) {
-          return RevSettings.getScaffold(usernameController, passwordController);
-        },
+        builder: (context) => RevSettings.getScaffold(usernameController, passwordController),
       ),
     );
   }
