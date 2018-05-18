@@ -5,6 +5,7 @@ import 'dart:ui' as ui show instantiateImageCodec, Codec;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:image_picker/image_picker.dart';
 
@@ -217,10 +218,19 @@ class SelectPhotosState extends State<SelectPhotos> {
     );
   }
 
-  void _onSettingsButtonPressed() {
+  void _onSettingsButtonPressed() async {
+    final FlutterSecureStorage secureStorage = new FlutterSecureStorage();
+    TextEditingController usernameController = new TextEditingController(
+        text: await secureStorage.read(key: 'wikiUsername'));
+    TextEditingController passwordController = new TextEditingController(
+        text: await secureStorage.read(key: 'wikiPassword'));
+
     Navigator.of(context).push(
       new MaterialPageRoute(
-          builder: (context) => RevSettings.getScaffold()),
+        builder: (context) {
+          return RevSettings.getScaffold(usernameController, passwordController);
+        },
+      ),
     );
   }
 

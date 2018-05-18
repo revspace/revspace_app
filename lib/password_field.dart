@@ -8,6 +8,7 @@ class PasswordField extends StatefulWidget {
     this.helperText,
     this.onSaved,
     this.validator,
+    this.controller,
     this.onFieldSubmitted,
   });
 
@@ -17,6 +18,7 @@ class PasswordField extends StatefulWidget {
   final String helperText;
   final FormFieldSetter<String> onSaved;
   final FormFieldValidator<String> validator;
+  final TextEditingController controller;
   final ValueChanged<String> onFieldSubmitted;
 
   @override
@@ -33,6 +35,7 @@ class _PasswordFieldState extends State<PasswordField> {
       obscureText: _obscureText,
       onSaved: widget.onSaved,
       validator: widget.validator,
+      controller: widget.controller,
       onFieldSubmitted: widget.onFieldSubmitted,
       decoration: new InputDecoration(
         border: const UnderlineInputBorder(),
