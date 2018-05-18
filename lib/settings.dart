@@ -1,12 +1,10 @@
-import 'dart:io';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 
 import 'package:url_launcher/url_launcher.dart' show launch;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'password_field.dart';
+import 'wiki.dart';
 
 class RevSettings {
   static final FlutterSecureStorage _secureStorage = new FlutterSecureStorage();
@@ -101,65 +99,32 @@ class RevSettings {
       content: new LinearProgressIndicator(),
     ));
 
-    // FIXME: this code is written for mediawiki 1.2, it throws warnings
-    // about deprecation in 1.28 and might stop working in the near future.
-    // See https://www.mediawiki.org/wiki/API:Login for details
-
-    Uri wikiAPI = Uri.parse('https://revspace.nl/api.php');
-    wikiAPI = Uri.parse('http://192.168.111.234/api.php');
-
-    HttpClient wikiClient = new HttpClient();
-    wikiClient.userAgent = 'RevSpaceApp (Dart ${Platform.version})';
-
-    wikiClient.postUrl(wikiAPI).then((HttpClientRequest request) {
-      String data = 'format=json&action=login'
-          '&lgname=${Uri.encodeQueryComponent(_newUsername)}';
-      request.headers.contentType = new ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-      request.headers.contentLength = data.length;
-      request.write(data);
-      return request.close();
-    }).then((HttpClientResponse response) {
-      response.listen((data) {
-        String token = json.decode(new String.fromCharCodes(data))['login']['token'];
-        wikiClient.postUrl(wikiAPI).then((HttpClientRequest request) {
-          String data = 'format=json&action=login'
-              '&lgname=${Uri.encodeQueryComponent(_newUsername)}'
-              '&lgpassword=${Uri.encodeQueryComponent(_newPassword)}'
-              '&lgtoken=${Uri.encodeQueryComponent(token)}';
-          request.headers.contentType = new ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-          request.headers.contentLength = data.length;
-          request.cookies.addAll(response.cookies);
-          request.write(data);
-          return request.close();
-        }).then((HttpClientResponse response) {
-          response.listen((data) {
-            _scaffoldKey.currentState.hideCurrentSnackBar();
-            if (json.decode(new String.fromCharCodes(data))['login']['result'] == 'Success') {
-              _scaffoldKey.currentState.showSnackBar(new SnackBar(
-                duration: new Duration(seconds: 5),
-                content: new Text(
-                  'Your login settings are correct and have been saved!',
-                  softWrap: true,
-                  style: new TextStyle(fontSize: 16.0),
-                ),
-              ));
-              _secureStorage.write(key: 'wikiUsername', value: _newUsername);
-              _secureStorage.write(key: 'wikiPassword', value: _newPassword);
-              print('success');
-            } else {
-              _scaffoldKey.currentState.showSnackBar(new SnackBar(
-                duration: new Duration(days: 9001),
-                content: new Text(
-                  'Your login settings are incorrect!\nPlease try again.',
-                  softWrap: true,
-                  style: new TextStyle(fontSize: 16.0),
-                ),
-              ));
-              print('fail');
-            }
-          });
-        });
-      });
+    RevWikiTools wiki = new RevWikiTools();
+    wiki.login(_newUsername, _newPassword, (success) {
+      _scaffoldKey.currentState.hideCurrentSnackBar();
+      if (success) {
+        _scaffoldKey.currentState.showSnackBar(new SnackBar(
+          duration: new Duration(seconds: 5),
+          content: new Text(
+            'Your login settings are correct and have been saved!',
+            softWrap: true,
+            style: new TextStyle(fontSize: 16.0),
+          ),
+        ));
+        _secureStorage.write(key: 'wikiUsername', value: _newUsername);
+        _secureStorage.write(key: 'wikiPassword', value: _newPassword);
+        print('success');
+      } else {
+        _scaffoldKey.currentState.showSnackBar(new SnackBar(
+          duration: new Duration(days: 9001),
+          content: new Text(
+            'Your login settings are incorrect!\nPlease try again.',
+            softWrap: true,
+            style: new TextStyle(fontSize: 16.0),
+          ),
+        ));
+        print('fail');
+      }
     });
   }
 }
