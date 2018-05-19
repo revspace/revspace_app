@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:material_search/material_search.dart';
+import 'package:image/image.dart' as GFX;
 
 import 'main.dart';
 import 'wiki.dart';
@@ -18,6 +19,8 @@ class RevSend {
         _wiki.getAllProjects().then((projects) {
           _projects = projects;
         });
+      } else {
+        Navigator.of(_scaffoldKey.currentContext).pop();
       }
     });
 
@@ -89,7 +92,6 @@ class RevSend {
               child: new Icon(Icons.send),
               onPressed: () {
                 print('FAB pressed: $_selectedProject');
-                //imagesList[0].
               },
             )
           : null,

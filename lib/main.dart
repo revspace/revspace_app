@@ -13,6 +13,7 @@ import 'send.dart';
 
 void main() => runApp(new RevSpaceApp());
 
+final FlutterSecureStorage secureStorage = new FlutterSecureStorage();
 List<RevImage> images = new List<RevImage>();
 SelectPhotosState selectPhotosState;
 
@@ -104,9 +105,17 @@ class RevFileImage extends FileImage {
 
 class SelectPhotosState extends State<SelectPhotos> {
   final GlobalKey<FormState> _selectPhotosFormKey = new GlobalKey<FormState>();
+  bool _firstRun = true;
 
   @override
   Widget build(BuildContext context) {
+    secureStorage.read(key: 'wikiUsername').then((value) {
+      setState(() {
+        _firstRun = (value == null);
+      });
+    });
+
+
     return new Scaffold(
       appBar: new AppBar(
         title: new Text('Select Photos'),
@@ -121,9 +130,17 @@ class SelectPhotosState extends State<SelectPhotos> {
       body: new Form(
         key: _selectPhotosFormKey,
         onChanged: () => _selectPhotosFormKey.currentState.save(),
-        child:
+        child: _firstRun ?
+        new Card(
+          margin: const EdgeInsets.all(16.0),
+          child: new Container(
+            margin: const EdgeInsets.all(8.0),
+            child: new Text('You are running this app for the first time.\n\n'
+                'Please go to settings (top-right) to setup your RevSpace wiki account before uploading.'),
+          ),
+        ) :
         new ListView.builder(
-          padding: const EdgeInsets.only(bottom: 32.0),
+          padding: const EdgeInsets.only(top: 8.0, bottom: 32.0),
           itemCount: images.length,
           itemBuilder: (context, index) {
             return new Card(
@@ -232,7 +249,6 @@ class SelectPhotosState extends State<SelectPhotos> {
     );
   }
 
-
   void _onSendButtonPressed() {
     if (_selectPhotosFormKey.currentState.validate()) {
       Navigator.of(context).push(
@@ -243,9 +259,7 @@ class SelectPhotosState extends State<SelectPhotos> {
     }
   }
 
-
   void _onSettingsButtonPressed() async {
-    final FlutterSecureStorage secureStorage = new FlutterSecureStorage();
     TextEditingController usernameController = new TextEditingController(
         text: await secureStorage.read(key: 'wikiUsername'));
     TextEditingController passwordController = new TextEditingController(
