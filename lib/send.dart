@@ -18,7 +18,6 @@ class RevSend {
 
   static Scaffold getScaffold() {
     _wiki.loginFromSecureStorage((success) {
-      print('suc: $success');
       if (success) {
         _wiki.getAllProjects().then((projects) {
           _projects = projects;
@@ -49,7 +48,9 @@ class RevSend {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   new Text(im.description),
-                  new LinearProgressIndicator(),
+                  new LinearProgressIndicator(
+                    value: im.progress,
+                  ),
                 ],
               ),
             ),
@@ -95,19 +96,20 @@ class RevSend {
           ? new FloatingActionButton(
               child: new Icon(Icons.send),
               onPressed: () {
-                print('FAB pressed, project: $_selectedProject, images: ${images.length}');
-
+                print(images);
                 final response = new ReceivePort();
                 Isolate.spawn(_imageResizeWorker, response.sendPort);
                 response.first.then((first) {
                   final answer = new ReceivePort();
-                  first.send([images, answer.sendPort]);
-                  answer.first.then((first) {
-                    print('answer: $first');
+                  answer.listen((data) {
+                    images[data].progress = 0.1;
+                  });
+                  int i = 0;
+                  images.forEach((im) {
+                    im.progress = null;
+                    first.send([im, i++, answer.sendPort]);
                   });
                 });
-
-                //Isolate.spawn(_imageResizeWorker, new ReceivePort().sendPort..send(images));
               },
             )
           : null,
@@ -121,27 +123,23 @@ class RevSend {
     initialReplyTo.send(port.sendPort);
 
     port.listen((message) {
-      final data = message[0] as List<RevImage>;
-      final send = message[1] as SendPort;
+      final im = message[0] as RevImage;
+      final i = message[1] as int;
+      final send = message[2] as SendPort;
 
-      data.forEach((im) {
-        print('processing $im');
-        GFX.Image image = GFX.decodeImage(im.file.readAsBytesSync());
-        if (max(image.width, image.height) > maxSizePx) {
-          image = GFX.copyResize(image, maxSizePx);
-          print('resized');
-        }
-        print('original  : ${(im.file
-            .readAsBytesSync()
-            .length / 1024 / 1024).toStringAsFixed(3)}');
-        print('resized 90: ${(GFX
-            .encodeJpg(image, quality: 90)
-            .length / 1024 / 1024).toStringAsFixed(3)}');
-        print('resized 60: ${(GFX
-            .encodeJpg(image, quality: 60)
-            .length / 1024 / 1024).toStringAsFixed(3)}');
-        send.send('from isolate: done!');
-      });
+      print('im: $im');
+      GFX.Image image = GFX.decodeImage(im.file.readAsBytesSync());
+      if (max(image.width, image.height) > maxSizePx) {
+        image = GFX.copyResize(image, maxSizePx);
+        print('resized');
+      }
+      image = GFX.copyRotate(image, im.rotation*90);
+      print('rotated');
+      im.resizedJpeg = GFX.encodeJpg(image, quality: 75);
+      print('encoded: ${im.resizedJpeg.length / 1024} kB from ${im.file
+          .readAsBytesSync()
+          .length / 1024 } kB original');
+      send.send(i);
     });
   }
 }

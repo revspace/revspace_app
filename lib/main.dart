@@ -28,11 +28,18 @@ class RevImage {
   File file;
   int rotation;
   String description;
+  double progress = 0.0;
+  List<int> resizedJpeg;
 
   RevImage(this.file, this.rotation);
 
   String toString() {
-    return 'RevImage [${file.uri.toString()}; $rotation; $description]\n';
+    return 'RevImage ['
+        '${file.path
+        .split('/')
+        .last}; '
+        '${rotation * 90}°; '
+        '$description]';
   }
 }
 
