@@ -66,6 +66,10 @@ class RevWikiTools {
   }
 
   Future<List<String>> getAllProjects() async {
+    if(!_loggedIn) {
+      throw new WikiNotLoggedInException();
+    }
+
     HttpClientRequest request = await _wikiClient.postUrl(wikiAPI);
 
     String data = 'format=json&action=ask&query=${Uri.encodeQueryComponent(
@@ -83,4 +87,13 @@ class RevWikiTools {
 
     return results.keys.toList();
   }
+}
+
+class WikiNotLoggedInException implements Exception {
+  final String msg;
+
+  const WikiNotLoggedInException([this.msg]);
+
+  @override
+  String toString() => msg ?? 'WikiNotLoggedInException: You have to be logged in before doing this.';
 }
