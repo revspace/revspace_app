@@ -66,7 +66,7 @@ class RevWikiTools {
   }
 
   Future<List<String>> getAllProjects() async {
-    if(!_loggedIn) {
+    if (!_loggedIn) {
       throw new WikiNotLoggedInException();
     }
 
