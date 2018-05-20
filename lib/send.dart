@@ -1,3 +1,6 @@
+import 'dart:math';
+import 'dart:isolate';
+
 import 'package:flutter/material.dart';
 import 'package:material_search/material_search.dart';
 import 'package:image/image.dart' as GFX;
@@ -13,8 +16,9 @@ class RevSend {
   static final GlobalKey<FormState> _sendFormKey = new GlobalKey<FormState>();
   static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
-  static Scaffold getScaffold(List<RevImage> images) {
+  static Scaffold getScaffold() {
     _wiki.loginFromSecureStorage((success) {
+      print('suc: $success');
       if (success) {
         _wiki.getAllProjects().then((projects) {
           _projects = projects;
@@ -91,10 +95,53 @@ class RevSend {
           ? new FloatingActionButton(
               child: new Icon(Icons.send),
               onPressed: () {
-                print('FAB pressed: $_selectedProject');
+                print('FAB pressed, project: $_selectedProject, images: ${images.length}');
+
+                final response = new ReceivePort();
+                Isolate.spawn(_imageResizeWorker, response.sendPort);
+                response.first.then((first) {
+                  final answer = new ReceivePort();
+                  first.send([images, answer.sendPort]);
+                  answer.first.then((first) {
+                    print('answer: $first');
+                  });
+                });
+
+                //Isolate.spawn(_imageResizeWorker, new ReceivePort().sendPort..send(images));
               },
             )
           : null,
     );
+  }
+
+  static void _imageResizeWorker(SendPort initialReplyTo) {
+    const int maxSizePx = 4000;
+    print('Hello from isolate');
+    final port = new ReceivePort();
+    initialReplyTo.send(port.sendPort);
+
+    port.listen((message) {
+      final data = message[0] as List<RevImage>;
+      final send = message[1] as SendPort;
+
+      data.forEach((im) {
+        print('processing $im');
+        GFX.Image image = GFX.decodeImage(im.file.readAsBytesSync());
+        if (max(image.width, image.height) > maxSizePx) {
+          image = GFX.copyResize(image, maxSizePx);
+          print('resized');
+        }
+        print('original  : ${(im.file
+            .readAsBytesSync()
+            .length / 1024 / 1024).toStringAsFixed(3)}');
+        print('resized 90: ${(GFX
+            .encodeJpg(image, quality: 90)
+            .length / 1024 / 1024).toStringAsFixed(3)}');
+        print('resized 60: ${(GFX
+            .encodeJpg(image, quality: 60)
+            .length / 1024 / 1024).toStringAsFixed(3)}');
+        send.send('from isolate: done!');
+      });
+    });
   }
 }

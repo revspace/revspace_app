@@ -115,7 +115,6 @@ class SelectPhotosState extends State<SelectPhotos> {
       });
     });
 
-
     return new Scaffold(
       appBar: new AppBar(
         title: new Text('Select Photos'),
@@ -253,7 +252,7 @@ class SelectPhotosState extends State<SelectPhotos> {
     if (_selectPhotosFormKey.currentState.validate()) {
       Navigator.of(context).push(
           new MaterialPageRoute(
-            builder: (context) => RevSend.getScaffold(images),
+            builder: (context) => RevSend.getScaffold(),
           )
       );
     }
