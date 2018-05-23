@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
-import 'package:url_launcher/url_launcher.dart' show launch;
+import 'package:url_launcher/url_launcher.dart' as UrlLauncher;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'password_field.dart';
@@ -39,12 +40,63 @@ class RevSettings {
                     mini: true,
                     elevation: 3.0,
                     onPressed: () {
-                      launch('mailto:board@revspace.nl?subject=Nieuw wiki account&body='
-                          'Beste Bestuur,\n\n'
+                      String mailtoBody = 'Beste Bestuur,\n\n'
                           'Graag zou ik een account krijgen voor de RevSpace Wiki.\n\n'
-                          'Mijn nickname is: \n\n'
+                          'Mijn nickname is: ${(_newUsername != null) ? _newUsername : ''}\n\n'
                           'Geautomatiseerde groeten,\n\n'
-                          'De RevSpace App');
+                          'De RevSpace App';
+                      String mailtoUri = Uri.encodeFull('mailto:board@revspace.nl'
+                          '?subject=Nieuw wiki account&body=$mailtoBody');
+                      UrlLauncher.canLaunch(mailtoUri).then((yesWeCan) {
+                        if (yesWeCan) {
+                          UrlLauncher.launch(mailtoUri);
+                        } else {
+                          showDialog(
+                            context: _scaffoldKey.currentContext,
+                            builder: (context) {
+                              return new AlertDialog(
+                                title: const Text('Email to board'),
+                                content: new Column(
+                                  children: [
+                                    const Text('Your phone does not have a working mail app. '
+                                        'Please send the mail manually. '
+                                        'You can copy the text below to get started'),
+                                    new SizedBox(height: 24.0),
+                                    new Text(
+                                      mailtoBody,
+                                      style: new TextStyle(
+                                        fontSize: 12.0,
+                                        fontStyle: FontStyle.italic,
+                                        color: Colors.grey,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  new FlatButton(
+                                    child: const Text('COPY'),
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      Clipboard.setData(new ClipboardData(text: mailtoBody));
+                                      _scaffoldKey.currentState.showSnackBar(new SnackBar(
+                                        duration: new Duration(seconds: 4),
+                                        content: new Text(
+                                          'The email text has been copied.',
+                                          softWrap: true,
+                                        ),
+                                      ));
+                                    },
+                                  ),
+                                  new FlatButton(
+                                    child: const Text('OK'),
+                                    onPressed: () => Navigator.pop(context),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        }
+                      });
                     }),
               ]),
               const SizedBox(height: 24.0),
