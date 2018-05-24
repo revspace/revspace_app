@@ -22,11 +22,15 @@ class SelectPhotosState extends State<SelectPhotos> {
 
   @override
   Widget build(BuildContext context) {
-    _secureStorage.read(key: 'wikiUsername').then((value) {
+    if (_firstRun) {
       setState(() {
-        _firstRun = (value == null);
+        _secureStorage.read(key: 'wikiUsername').then((value) {
+          setState(() {
+            _firstRun = (value == null);
+          });
+        });
       });
-    });
+    }
 
     return new Scaffold(
       appBar: new AppBar(
@@ -175,14 +179,12 @@ class SelectPhotosState extends State<SelectPhotos> {
   }
 
   void _onImageButtonPressed(ImageSource source) {
-    setState(() {
-      ImagePicker.pickImage(source: source).then((newImage) {
-        if (newImage != null) {
-          setState(() {
-            images.add(new RevImage(newImage, 0));
-          });
-        }
-      });
+    ImagePicker.pickImage(source: source).then((newImage) {
+      if (newImage != null) {
+        setState(() {
+          images.add(new RevImage(newImage, 0));
+        });
+      }
     });
   }
 }
