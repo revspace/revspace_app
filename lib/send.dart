@@ -102,11 +102,11 @@ class RevSend {
                 response.first.then((first) {
                   final answer = new ReceivePort();
                   answer.listen((data) {
-                    images[data].progress = 0.1;
+                    images[data].progress = 0.1; // is broken
                   });
                   int i = 0;
                   images.forEach((im) {
-                    im.progress = null;
+                    im.progress = null; // is broken
                     first.send([im, i++, answer.sendPort]);
                   });
                 });
@@ -133,8 +133,11 @@ class RevSend {
         image = GFX.copyResize(image, maxSizePx);
         print('resized');
       }
-      image = GFX.copyRotate(image, im.rotation*90);
-      print('rotated');
+      int actualRotation = im.rotation % 4 * 90;
+      if (actualRotation != 0) {
+        image = GFX.copyRotate(image, actualRotation);
+        print('rotated');
+      }
       im.resizedJpeg = GFX.encodeJpg(image, quality: 75);
       print('encoded: ${im.resizedJpeg.length / 1024} kB from ${im.file
           .readAsBytesSync()

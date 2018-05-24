@@ -26,19 +26,19 @@ class RevSpaceApp extends StatelessWidget {
 
 class RevImage {
   File file;
-  int rotation;
+  int rotation = 0;
   String description;
   double progress = 0.0;
   List<int> resizedJpeg;
 
-  RevImage(this.file, this.rotation);
+  RevImage(this.file);
 
   String toString() {
     return 'RevImage ['
         '${file.path
         .split('/')
         .last}; '
-        '${rotation * 90}°; '
+        '${rotation%4 * 90}°; '
         '$description]';
   }
 }

@@ -182,7 +182,7 @@ class SelectPhotosState extends State<SelectPhotos> {
     ImagePicker.pickImage(source: source).then((newImage) {
       if (newImage != null) {
         setState(() {
-          images.add(new RevImage(newImage, 0));
+          images.add(new RevImage(newImage));
         });
       }
     });
