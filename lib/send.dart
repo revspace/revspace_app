@@ -13,7 +13,6 @@ class RevSend {
   static List<String> _projects = ['Loading...'];
   static String _selectedProject;
 
-  static final GlobalKey<FormState> _sendFormKey = new GlobalKey<FormState>();
   static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   static Scaffold getScaffold() {
