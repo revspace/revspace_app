@@ -12,6 +12,9 @@ import 'wiki.dart';
 class RevSettings extends StatefulWidget {
   static const String routeName = '/settings';
   final FlutterSecureStorage _secureStorage = new FlutterSecureStorage();
+  final bool loginFailure;
+
+  RevSettings({bool loginFailure = false}) : super();
 
   @override
   _RevSettingsState createState() => new _RevSettingsState();
@@ -35,6 +38,15 @@ class _RevSettingsState extends State<RevSettings> {
         usernameController = new TextEditingController(text: user);
         passwordController = new TextEditingController(text: pass);
       });
+      if (widget.loginFailure) {
+        _scaffoldKey.currentState.showSnackBar(new SnackBar(
+          duration: new Duration(seconds: 10),
+          content: new Text(
+            'Failed to login! Please verify that your username and password are correct.',
+            softWrap: true,
+          ),
+        ));
+      }
     });
   }
 

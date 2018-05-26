@@ -28,13 +28,17 @@ class _RevSendState extends State<RevSend> {
     new Future(() async {
       _wiki.loginFromSecureStorage((success) {
         if (success) {
+          debugPrint('getting projects');
           _wiki.getAllProjects().then((projects) {
-            _projects = projects;
+            debugPrint('got projects');
+            setState(() {
+              _projects = projects;
+            });
           });
         } else {
           Navigator.of(context).push(
                 new MaterialPageRoute(
-                  builder: (context) => new RevSettings(),
+                  builder: (context) => new RevSettings(loginFailure: true),
                 ),
               );
         }
