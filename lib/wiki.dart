@@ -1,8 +1,12 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'main.dart';
 
 class RevWikiTools {
   static final Uri wikiAPI = Uri.parse('https://revspace.nl/api.php');
@@ -86,6 +90,18 @@ class RevWikiTools {
     Map results = body['query']['results'];
 
     return results.keys.toList();
+  }
+
+  void uploadImage(RevImage im, State state) async {
+    debugPrint('Uploading $im');
+    while (im.progress < 1) {
+      await new Future.delayed(const Duration(milliseconds: 500));
+      //sleep(const Duration(milliseconds: 200));
+      state.setState(() {
+        im.progress = min(im.progress += 0.123, 1.0);
+      });
+      debugPrint('prog: ${im.progress*100}%');
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:async';
 import 'dart:isolate';
 
 import 'package:flutter/material.dart';
@@ -114,10 +115,33 @@ class _RevSendState extends State<RevSend> {
                     });
                     im.resizedJpeg = data[0];
                     if (im != images.last) {
-                      data[1]++;
-                      RevImage nextIm = images[data[1]];
-                      nextIm.progress = null;
-                      first.send([nextIm, data[1], answer.sendPort]);
+                      // if not the last image, tell the isolate to start resizing the next
+                      images[data[1] + 1].progress = null;
+                      first.send([images[data[1] + 1], data[1] + 1, answer.sendPort]);
+                    }
+                    if (im == images.first) {
+                      // if the first image, directly start uploading
+                      _wiki.uploadImage(im, this);
+                    } else {
+                      // if not, wait for the previous upload to complete before uploading
+                      debugPrint('im ${data[1]} waiting for upload of ${data[1] - 1}!');
+                      new Future(() async {
+                        while (images[data[1] - 1].progress < 1) {
+                          await new Future.delayed(const Duration(milliseconds: 200));
+                        }
+                      }).then((_null) {
+                        _wiki.uploadImage(im, this);
+                      });
+                    }
+                    if(im == images.last) {
+                      // if last image, wait untill done
+                      new Future(() async {
+                        while (images[data[1]].progress < 1) {
+                          await new Future.delayed(const Duration(milliseconds: 200));
+                        }
+                      }).then((_null) {
+                        debugPrint('all uploads done! happy now?');
+                      });
                     }
                   });
                   setState(() {
