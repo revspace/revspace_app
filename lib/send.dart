@@ -110,7 +110,7 @@ class _RevSendState extends State<RevSend> {
                   answer.listen((data) {
                     RevImage im = images[data[1]];
                     setState(() {
-                      im.progress = 0.1; // is broken
+                      im.progress = 0.1;
                     });
                     im.resizedJpeg = data[0];
                     if (im != images.last) {
