@@ -38,7 +38,7 @@ class RevImage {
         '${file.path
         .split('/')
         .last}; '
-        '${rotation%4 * 90}°; '
+        '${rotation % 4 * 90}°; '
         '$description]';
   }
 }
@@ -73,13 +73,14 @@ class RevFileImage extends FileImage {
     try {
       imageCodec = await ui.instantiateImageCodec(bytes);
     } catch (e) {
-      print('filename: ${file.path}');
-      print('num_bytes: ${bytes.length}');
+      debugPrint('Not a valid photo. File: ${file.path} Size: ${bytes.length}');
       selectPhotosState.setState(() {
         images.remove(_ri);
         Scaffold.of(_context).showSnackBar(new SnackBar(
           duration: new Duration(seconds: 4),
-          content: new Text('That is not a valid photo.'),
+          content: new Text('${file.path
+              .split('/')
+              .last} is not a valid photo.'),
         ));
       });
       // We need to clear the cache because if we don't and the user selects the same invalid photo twice
