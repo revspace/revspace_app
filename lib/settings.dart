@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -7,15 +9,37 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'password_field.dart';
 import 'wiki.dart';
 
-class RevSettings {
+class RevSettings extends StatefulWidget {
+  static const String routeName = '/settings';
+  final FlutterSecureStorage _secureStorage = new FlutterSecureStorage();
+
+  @override
+  _RevSettingsState createState() => new _RevSettingsState();
+}
+
+class _RevSettingsState extends State<RevSettings> {
   static final FlutterSecureStorage _secureStorage = new FlutterSecureStorage();
   static final GlobalKey<FormState> _settingsFormKey = new GlobalKey<FormState>();
   static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
+  TextEditingController usernameController, passwordController;
+
   static String _newUsername, _newPassword;
   static bool _snackbarState = false;
 
-  static Scaffold getScaffold(TextEditingController usernameController, TextEditingController passwordController) {
+  _RevSettingsState() {
+    new Future(() async {
+      String user = await _secureStorage.read(key: 'wikiUsername');
+      String pass = await _secureStorage.read(key: 'wikiPassword');
+      setState(() {
+        usernameController = new TextEditingController(text: user);
+        passwordController = new TextEditingController(text: pass);
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return new Scaffold(
       key: _scaffoldKey,
       appBar: new AppBar(

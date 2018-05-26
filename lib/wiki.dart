@@ -62,6 +62,7 @@ class RevWikiTools {
             bool success = json.decode(new String.fromCharCodes(data))['login']['result'] == 'Success';
             _loggedIn = success;
             _userName = username;
+            debugPrint('wiki login() called, succes is $success');
             callback(success);
           });
         });

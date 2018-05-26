@@ -166,14 +166,9 @@ class SelectPhotosState extends State<SelectPhotos> {
   }
 
   void _onSettingsButtonPressed() async {
-    TextEditingController usernameController =
-        new TextEditingController(text: await _secureStorage.read(key: 'wikiUsername'));
-    TextEditingController passwordController =
-        new TextEditingController(text: await _secureStorage.read(key: 'wikiPassword'));
-
     Navigator.of(context).push(
           new MaterialPageRoute(
-            builder: (context) => RevSettings.getScaffold(usernameController, passwordController),
+            builder: (context) => new RevSettings(),
           ),
         );
   }

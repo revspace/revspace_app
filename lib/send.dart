@@ -8,6 +8,7 @@ import 'package:image/image.dart' as GFX;
 
 import 'main.dart';
 import 'wiki.dart';
+import 'settings.dart';
 
 class RevSend extends StatefulWidget {
   static const String routeName = '/send';
@@ -23,18 +24,26 @@ class _RevSendState extends State<RevSend> {
 
   static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
+  _RevSendState() {
+    new Future(() async {
+      _wiki.loginFromSecureStorage((success) {
+        if (success) {
+          _wiki.getAllProjects().then((projects) {
+            _projects = projects;
+          });
+        } else {
+          Navigator.of(context).push(
+                new MaterialPageRoute(
+                  builder: (context) => new RevSettings(),
+                ),
+              );
+        }
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    _wiki.loginFromSecureStorage((success) {
-      if (success) {
-        _wiki.getAllProjects().then((projects) {
-          _projects = projects;
-        });
-      } else {
-        Navigator.of(_scaffoldKey.currentContext).pop();
-      }
-    });
-
     List<Card> imagesList = new List<Card>();
     images.forEach((im) {
       imagesList.add(new Card(
@@ -133,7 +142,7 @@ class _RevSendState extends State<RevSend> {
                         _wiki.uploadImage(im, this);
                       });
                     }
-                    if(im == images.last) {
+                    if (im == images.last) {
                       // if last image, wait untill done
                       new Future(() async {
                         while (images[data[1]].progress < 1) {
