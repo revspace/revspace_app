@@ -28,9 +28,7 @@ class _RevSendState extends State<RevSend> {
     new Future(() async {
       _wiki.loginFromSecureStorage((success) {
         if (success) {
-          debugPrint('getting projects');
           _wiki.getAllProjects().then((projects) {
-            debugPrint('got projects');
             setState(() {
               _projects = projects;
             });
