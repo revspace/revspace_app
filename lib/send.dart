@@ -8,14 +8,22 @@ import 'package:image/image.dart' as GFX;
 import 'main.dart';
 import 'wiki.dart';
 
-class RevSend {
+class RevSend extends StatefulWidget {
+  static const String routeName = '/send';
+
+  @override
+  _RevSendState createState() => new _RevSendState();
+}
+
+class _RevSendState extends State<RevSend> {
   static RevWikiTools _wiki = new RevWikiTools();
   static List<String> _projects = ['Loading...'];
   static String _selectedProject;
 
   static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
-  static Scaffold getScaffold() {
+  @override
+  Widget build(BuildContext context) {
     _wiki.loginFromSecureStorage((success) {
       if (success) {
         _wiki.getAllProjects().then((projects) {
@@ -95,19 +103,27 @@ class RevSend {
           ? new FloatingActionButton(
               child: new Icon(Icons.send),
               onPressed: () {
-                print(images);
                 final response = new ReceivePort();
                 Isolate.spawn(_imageResizeWorker, response.sendPort);
                 response.first.then((first) {
                   final answer = new ReceivePort();
                   answer.listen((data) {
-                    images[data].progress = 0.1; // is broken
+                    RevImage im = images[data[1]];
+                    setState(() {
+                      im.progress = 0.1; // is broken
+                    });
+                    im.resizedJpeg = data[0];
+                    if (im != images.last) {
+                      data[1]++;
+                      RevImage nextIm = images[data[1]];
+                      nextIm.progress = null;
+                      first.send([nextIm, data[1], answer.sendPort]);
+                    }
                   });
-                  int i = 0;
-                  images.forEach((im) {
-                    im.progress = null; // is broken
-                    first.send([im, i++, answer.sendPort]);
+                  setState(() {
+                    images[0].progress = null;
                   });
+                  first.send([images[0], 0, answer.sendPort]);
                 });
               },
             )
@@ -117,31 +133,27 @@ class RevSend {
 
   static void _imageResizeWorker(SendPort initialReplyTo) {
     const int maxSizePx = 4000;
-    print('Hello from isolate');
     final port = new ReceivePort();
     initialReplyTo.send(port.sendPort);
 
     port.listen((message) {
-      final im = message[0] as RevImage;
-      final i = message[1] as int;
-      final send = message[2] as SendPort;
+      final RevImage im = message[0];
+      final int i = message[1];
+      final SendPort send = message[2];
 
-      print('im: $im');
-      GFX.Image image = GFX.decodeImage(im.file.readAsBytesSync());
-      if (max(image.width, image.height) > maxSizePx) {
-        image = GFX.copyResize(image, maxSizePx);
-        print('resized');
+      GFX.Image newImage = GFX.decodeImage(im.file.readAsBytesSync());
+      if (max(newImage.width, newImage.height) > maxSizePx) {
+        newImage = GFX.copyResize(newImage, maxSizePx);
       }
       int actualRotation = im.rotation % 4 * 90;
       if (actualRotation != 0) {
-        image = GFX.copyRotate(image, actualRotation);
-        print('rotated');
+        newImage = GFX.copyRotate(newImage, actualRotation);
       }
-      im.resizedJpeg = GFX.encodeJpg(image, quality: 75);
-      print('encoded: ${im.resizedJpeg.length / 1024} kB from ${im.file
+      List<int> data = GFX.encodeJpg(newImage, quality: 75);
+      debugPrint('encoded: ${data.length / 1024} kB from ${im.file
           .readAsBytesSync()
           .length / 1024 } kB original');
-      send.send(i);
+      send.send([data, i]);
     });
   }
 }

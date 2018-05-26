@@ -160,7 +160,7 @@ class SelectPhotosState extends State<SelectPhotos> {
   void _onSendButtonPressed() {
     if (_selectPhotosFormKey.currentState.validate()) {
       Navigator.of(context).push(new MaterialPageRoute(
-            builder: (context) => RevSend.getScaffold(),
+            builder: (context) => new RevSend(),
           ));
     }
   }
