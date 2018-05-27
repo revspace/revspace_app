@@ -1,7 +1,7 @@
-import 'dart:io';
-import 'dart:async';
-import 'dart:typed_data';
-import 'dart:ui' as ui show instantiateImageCodec, Codec;
+import 'dart:io' as IO;
+import 'dart:async' as Async;
+import 'dart:typed_data' as TypedData;
+import 'dart:ui' as UI show instantiateImageCodec, Codec;
 
 import 'package:flutter/material.dart';
 
@@ -25,7 +25,7 @@ class RevSpaceApp extends StatelessWidget {
 }
 
 class RevImage {
-  File file;
+  IO.File file;
   int rotation = 0;
   String description;
   double progress = 0.0;
@@ -62,16 +62,16 @@ class RevFileImage extends FileImage {
         });
   }
 
-  Future<ui.Codec> _loadAsync(FileImage key) async {
+  Async.Future<UI.Codec> _loadAsync(FileImage key) async {
     assert(key == this);
 
-    final Uint8List bytes = await file.readAsBytes();
+    final TypedData.Uint8List bytes = await file.readAsBytes();
     if (bytes.lengthInBytes == 0) return null;
 
 
-    ui.Codec imageCodec;
+    UI.Codec imageCodec;
     try {
-      imageCodec = await ui.instantiateImageCodec(bytes);
+      imageCodec = await UI.instantiateImageCodec(bytes);
     } catch (e) {
       debugPrint('Not a valid photo. File: ${file.path} Size: ${bytes.length}');
       selectPhotosState.setState(() {
@@ -90,9 +90,9 @@ class RevFileImage extends FileImage {
       // If we don't we will just have the exception we are trying to handle again.
       // @formatter:off
       // stolen from https://github.com/shinnn/node-smallest-png/blob/master/index.js
-      Uint8List dummy = new Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 10, 73, 68, 65, 84, 120, 156, 99, 0, 1, 0, 0, 5, 0, 1, 13, 10, 45, 180, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
+      TypedData.Uint8List dummy = new TypedData.Uint8List.fromList([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 6, 0, 0, 0, 31, 21, 196, 137, 0, 0, 0, 10, 73, 68, 65, 84, 120, 156, 99, 0, 1, 0, 0, 5, 0, 1, 13, 10, 45, 180, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
       // @formatter:on      
-      imageCodec = await ui.instantiateImageCodec(dummy);
+      imageCodec = await UI.instantiateImageCodec(dummy);
     }
     return imageCodec;
   }

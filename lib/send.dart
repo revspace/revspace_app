@@ -1,6 +1,6 @@
-import 'dart:math';
-import 'dart:async';
-import 'dart:isolate';
+import 'dart:math' as Math;
+import 'dart:async' as Async;
+import 'dart:isolate' as Isolate;
 
 import 'package:flutter/material.dart';
 import 'package:material_search/material_search.dart';
@@ -25,7 +25,7 @@ class _RevSendState extends State<RevSend> {
   static final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   _RevSendState() {
-    new Future(() async {
+    new Async.Future(() async {
       _wiki.loginFromSecureStorage((success) {
         if (success) {
           _wiki.getAllProjects().then((projects) {
@@ -115,10 +115,10 @@ class _RevSendState extends State<RevSend> {
           ? new FloatingActionButton(
               child: new Icon(Icons.send),
               onPressed: () {
-                final response = new ReceivePort();
-                Isolate.spawn(_imageResizeWorker, response.sendPort);
+                final response = new Isolate.ReceivePort();
+                Isolate.Isolate.spawn(_imageResizeWorker, response.sendPort);
                 response.first.then((first) {
-                  final answer = new ReceivePort();
+                  final answer = new Isolate.ReceivePort();
                   answer.listen((data) {
                     RevImage im = images[data[1]];
                     setState(() {
@@ -136,9 +136,9 @@ class _RevSendState extends State<RevSend> {
                     } else {
                       // if not, wait for the previous upload to complete before uploading
                       debugPrint('im ${data[1]} waiting for upload of ${data[1] - 1}!');
-                      new Future(() async {
+                      new Async.Future(() async {
                         while (images[data[1] - 1].progress < 1) {
-                          await new Future.delayed(const Duration(milliseconds: 200));
+                          await new Async.Future.delayed(const Duration(milliseconds: 200));
                         }
                       }).then((_null) {
                         _wiki.uploadImage(im, this);
@@ -146,9 +146,9 @@ class _RevSendState extends State<RevSend> {
                     }
                     if (im == images.last) {
                       // if last image, wait untill done
-                      new Future(() async {
+                      new Async.Future(() async {
                         while (images[data[1]].progress < 1) {
-                          await new Future.delayed(const Duration(milliseconds: 200));
+                          await new Async.Future.delayed(const Duration(milliseconds: 200));
                         }
                       }).then((_null) {
                         debugPrint('all uploads done! happy now?');
@@ -166,18 +166,18 @@ class _RevSendState extends State<RevSend> {
     );
   }
 
-  static void _imageResizeWorker(SendPort initialReplyTo) {
+  static void _imageResizeWorker(Isolate.SendPort initialReplyTo) {
     const int maxSizePx = 4000;
-    final port = new ReceivePort();
+    final port = new Isolate.ReceivePort();
     initialReplyTo.send(port.sendPort);
 
     port.listen((message) {
       final RevImage im = message[0];
       final int i = message[1];
-      final SendPort send = message[2];
+      final Isolate.SendPort send = message[2];
 
       GFX.Image newImage = GFX.decodeImage(im.file.readAsBytesSync());
-      if (max(newImage.width, newImage.height) > maxSizePx) {
+      if (Math.max(newImage.width, newImage.height) > maxSizePx) {
         newImage = GFX.copyResize(newImage, maxSizePx);
       }
       int actualRotation = im.rotation % 4 * 90;

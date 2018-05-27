@@ -1,4 +1,4 @@
-import 'dart:async';
+import 'dart:async' as Async;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -31,7 +31,7 @@ class _RevSettingsState extends State<RevSettings> {
   static bool _snackbarState = false;
 
   _RevSettingsState() {
-    new Future(() async {
+    new Async.Future(() async {
       String user = await _secureStorage.read(key: 'wikiUsername');
       String pass = await _secureStorage.read(key: 'wikiPassword');
       setState(() {
