@@ -19,7 +19,6 @@ class RevWikiClient extends Http.BaseClient {
   Async.Future<Http.StreamedResponse> send(Http.BaseRequest request) {
     request.headers['user-agent'] = ua;
     request.headers['cookie'] = RevWikiTools.cookies.join('; ');
-    debugPrint('Cookies right now: ${RevWikiTools.cookies}');
     return _inner.send(request);
   }
 }
@@ -82,8 +81,7 @@ class RevWikiTools {
               'action': 'query',
               'meta': 'tokens',
             }).then((response) {
-              debugPrint(response.request.headers.toString());
-              debugPrint(response.body);
+
               _csrfToken = Convert.json.decode(response.body)['query']['tokens']['csrftoken'];
             });
           }
