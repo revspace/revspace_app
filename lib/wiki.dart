@@ -18,17 +18,19 @@ class RevWikiClient extends Http.BaseClient {
 
   Async.Future<Http.StreamedResponse> send(Http.BaseRequest request) {
     request.headers['user-agent'] = ua;
-    request.headers['cookie'] = RevWikiTools.cookies;
+    request.headers['cookie'] = RevWikiTools.cookies.join('; ');
+    debugPrint('Cookies right now: ${RevWikiTools.cookies}');
     return _inner.send(request);
   }
 }
 
 class RevWikiTools {
   static final Uri _wikiURL = Uri.parse('https://revspace.nl/api.php');
+
   //static final Uri _wikiURL = Uri.parse('http://192.168.111.234/api.php');
   static final String _userAgent = 'RevSpaceApp/${RevSpaceApp.version} (Dart ${IO.Platform.version})';
 
-  static String cookies = ';';
+  static List<String> cookies = [];
   RevWikiClient _wikiClient;
   bool _loggedIn = false;
   String _userName;
@@ -59,7 +61,7 @@ class RevWikiTools {
         'action': 'login',
         'lgname': username,
       }).then((response) {
-        cookies = response.headers['set-cookie'].toString().split(';')[0];
+        cookies.add(response.headers['set-cookie'].toString().split(';')[0]);
         String token = Convert.json.decode(response.body)['login']['token'];
         _wikiClient.post(_wikiURL, body: {
           'format': 'json',
@@ -68,9 +70,8 @@ class RevWikiTools {
           'lgpassword': password,
           'lgtoken': token,
         }).then((response) {
-          cookies = '';
           new RegExp(r'(?:^|,)(\S+?=.+?);').allMatches(response.headers['set-cookie']).forEach((m) {
-            cookies += m.group(1) + '; ';
+            cookies.add(m.group(1));
           });
           bool success = Convert.json.decode(response.body)['login']['result'] == 'Success';
           _loggedIn = success;
@@ -125,7 +126,7 @@ class RevWikiTools {
       Http.MultipartRequest request = new Http.MultipartRequest('POST', _wikiURL);
 
       request.headers['user-agent'] = _userAgent;
-      request.headers['cookie'] = cookies;
+      request.headers['cookie'] = cookies.join('; ');
 
       request.fields.addAll({
         'format': 'json',
@@ -163,7 +164,7 @@ class RevWikiTools {
         Http.MultipartRequest request = new Http.MultipartRequest('POST', _wikiURL);
 
         request.headers['user-agent'] = _userAgent;
-        request.headers['cookie'] = cookies;
+        request.headers['cookie'] = cookies.join('; ');
 
         request.fields.addAll({
           'format': 'json',
@@ -171,8 +172,8 @@ class RevWikiTools {
           'token': _csrfToken,
           'filename': fileName,
           'filekey': fileKey,
-          'comment': 'Uploaded using $_userAgent',
-          'text': im.description,
+          'comment': '${im.description}\n\nUploaded using $_userAgent',
+          'text': '${im.description}\n\nUploaded using $_userAgent',
         });
 
         Http.StreamedResponse response = await request.send();
@@ -180,8 +181,6 @@ class RevWikiTools {
         Map responseBody = Convert.jsonDecode(
           new String.fromCharCodes((await response.stream.toList()).expand((x) => x).toList()),
         );
-
-        debugPrint(responseBody.toString());
       }
     }
 
