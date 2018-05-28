@@ -15,6 +15,7 @@ class RevWikiTools {
   IO.HttpClient _wikiClient;
   bool _loggedIn = false;
   String _userName;
+  String _csrfToken;
 
   RevWikiTools() {
     _wikiClient = new IO.HttpClient();
@@ -63,6 +64,24 @@ class RevWikiTools {
             _loggedIn = success;
             _userName = username;
             debugPrint('wiki login() called, succes is $success');
+            if (success) {
+              _wikiClient.postUrl(wikiAPI).then((IO.HttpClientRequest request) {
+                String data = 'action=query&format=json&meta=tokens';
+                request.headers.contentType =
+                    new IO.ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
+                request.headers.contentLength = data.length;
+                request.cookies.addAll(_sessionCookies);
+                request.write(data);
+                return request.close();
+              }).then((IO.HttpClientResponse response) {
+                response.toList().then((list) {
+                  Map body = Convert.json.decode(new String.fromCharCodes(list.expand((x) => x).toList()));
+                  _csrfToken = body['query']['tokens']['csrftoken'];
+                  debugPrint(body.toString());
+                  debugPrint(_csrfToken);
+                });
+              });
+            }
             callback(success);
           });
         });
