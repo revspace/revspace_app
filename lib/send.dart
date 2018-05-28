@@ -5,6 +5,7 @@ import 'dart:isolate' as Isolate;
 import 'package:flutter/material.dart';
 import 'package:material_search/material_search.dart';
 import 'package:image/image.dart' as GFX;
+import 'package:crypto/crypto.dart';
 
 import 'main.dart';
 import 'wiki.dart';
@@ -190,6 +191,10 @@ class _RevSendState extends State<RevSend> {
       debugPrint('encoded: ${data.length / 1024} kB from ${im.file
           .readAsBytesSync()
           .length / 1024 } kB original');
+
+      debugPrint('exact filesize: ${data.length}');
+      debugPrint('sha1: ${sha1.convert(data)}');
+
       send.send([data, i]);
     });
   }

@@ -13,6 +13,7 @@ List<RevImage> images = new List<RevImage>();
 SelectPhotosState selectPhotosState;
 
 class RevSpaceApp extends StatelessWidget {
+  static final String version = '0.1';
 
   @override
   Widget build(BuildContext context) {
