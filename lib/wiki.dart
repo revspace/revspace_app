@@ -94,14 +94,32 @@ class RevWikiTools {
   }
 
   void uploadImage(RevImage im, State state) async {
-    debugPrint('Uploading $im');
-    while (im.progress < 1) {
-      await new Async.Future.delayed(const Duration(milliseconds: 500));
+    const int numChunks = 42;
+
+    String fileName = 'RevSpaceApp_IMG_'
+        '${DateTime.now().toIso8601String().replaceAll('T', '_').replaceAll(':', '-')}.jpg';
+
+    debugPrint('Uploading $im\n as $fileName');
+
+    int chunkSize = (im.resizedJpeg.length / (numChunks - 0.5)).round();
+
+
+    for (int i = 1; i < numChunks; i++) {
+      List<int> chunk = im.resizedJpeg.sublist(i * chunkSize, Math.min((i + 1) * chunkSize, im.resizedJpeg.length));
+      int thisChunkSize = chunk.length;
+
+      await new Async.Future.delayed(const Duration(milliseconds: 200)); // FIXME: dummy upload code. lame!
+
       state.setState(() {
-        im.progress = Math.min(im.progress += 0.123, 1.0);
+        im.progress = Math.min(im.progress += 0.8 / numChunks, 1.0);
       });
-      debugPrint('prog: ${im.progress*100}%');
     }
+    await new Async.Future.delayed(const Duration(milliseconds: 1000));
+
+    debugPrint('Done! $im');
+    state.setState(() {
+      im.progress = 1.0;
+    });
   }
 }
 

@@ -127,7 +127,9 @@ class _RevSendState extends State<RevSend> {
                     im.resizedJpeg = data[0];
                     if (im != images.last) {
                       // if not the last image, tell the isolate to start resizing the next
-                      images[data[1] + 1].progress = null;
+                      setState(() {
+                        images[data[1] + 1].progress = null;
+                      });
                       first.send([images[data[1] + 1], data[1] + 1, answer.sendPort]);
                     }
                     if (im == images.first) {
