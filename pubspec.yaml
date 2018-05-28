@@ -10,7 +10,6 @@ dependencies:
   material_search: ^0.2.6
   image: ^2.0.0
   http: ^0.11.3+16
-  crypto: ^2.0.3
 
 dev_dependencies:
   flutter_test:
