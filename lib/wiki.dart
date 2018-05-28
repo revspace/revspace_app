@@ -5,21 +5,34 @@ import 'dart:convert' as Convert;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart' as HTTP;
 
 import 'main.dart';
 
-class RevWikiTools {
-  static final Uri wikiAPI = Uri.parse('https://revspace.nl/api.php');
+class RevWikiClient extends HTTP.BaseClient {
+  final HTTP.Client _inner = new HTTP.Client();
+  final String ua;
 
-  List<IO.Cookie> _sessionCookies;
-  IO.HttpClient _wikiClient;
+  RevWikiClient(this.ua);
+
+  Async.Future<HTTP.StreamedResponse> send(HTTP.BaseRequest request) {
+    request.headers['user-agent'] = ua;
+    request.headers['cookie'] = RevWikiTools.cookies;
+    return _inner.send(request);
+  }
+}
+
+class RevWikiTools {
+  static final Uri wikiURL = Uri.parse('https://revspace.nl/api.php');
+
+  static String cookies = ';';
+  RevWikiClient _wikiClient;
   bool _loggedIn = false;
   String _userName;
   String _csrfToken;
 
   RevWikiTools() {
-    _wikiClient = new IO.HttpClient();
-    _wikiClient.userAgent = 'RevSpaceApp (Dart ${IO.Platform.version})';
+    _wikiClient = new RevWikiClient('RevSpaceApp (Dart ${IO.Platform.version})');
   }
 
   Async.Future<void> loginFromSecureStorage(Function callback(bool success)) async {
@@ -37,56 +50,37 @@ class RevWikiTools {
     // about deprecation in 1.28 and might stop working in the near future.
     // See https://www.mediawiki.org/wiki/API:Login for details
 
-    _wikiClient.postUrl(wikiAPI).then((IO.HttpClientRequest request) {
-      String data = 'format=json&action=login'
-          '&lgname=${Uri.encodeQueryComponent(username)}';
-      request.headers.contentType = new IO.ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-      request.headers.contentLength = data.length;
-      request.write(data);
-      return request.close();
-    }).then((IO.HttpClientResponse response) {
-      _sessionCookies = response.cookies;
-      response.listen((data) {
-        String token = Convert.json.decode(new String.fromCharCodes(data))['login']['token'];
-        _wikiClient.postUrl(wikiAPI).then((IO.HttpClientRequest request) {
-          String data = 'format=json&action=login'
-              '&lgname=${Uri.encodeQueryComponent(username)}'
-              '&lgpassword=${Uri.encodeQueryComponent(password)}'
-              '&lgtoken=${Uri.encodeQueryComponent(token)}';
-          request.headers.contentType = new IO.ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-          request.headers.contentLength = data.length;
-          request.cookies.addAll(_sessionCookies);
-          request.write(data);
-          return request.close();
-        }).then((IO.HttpClientResponse response) {
-          response.listen((data) {
-            bool success = Convert.json.decode(new String.fromCharCodes(data))['login']['result'] == 'Success';
-            _loggedIn = success;
-            _userName = username;
-            debugPrint('wiki login() called, succes is $success');
-            if (success) {
-              _wikiClient.postUrl(wikiAPI).then((IO.HttpClientRequest request) {
-                String data = 'action=query&format=json&meta=tokens';
-                request.headers.contentType =
-                    new IO.ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-                request.headers.contentLength = data.length;
-                request.cookies.addAll(_sessionCookies);
-                request.write(data);
-                return request.close();
-              }).then((IO.HttpClientResponse response) {
-                response.toList().then((list) {
-                  Map body = Convert.json.decode(new String.fromCharCodes(list.expand((x) => x).toList()));
-                  _csrfToken = body['query']['tokens']['csrftoken'];
-                  debugPrint(body.toString());
-                  debugPrint(_csrfToken);
-                });
-              });
-            }
-            callback(success);
-          });
+    if (!_loggedIn) {
+      _wikiClient.post(wikiURL, body: {
+        'format': 'json',
+        'action': 'login',
+        'lgname': username,
+      }).then((response) {
+        cookies = response.headers['set-cookie'].toString().split(';')[0];
+        String token = Convert.json.decode(response.body)['login']['token'];
+        _wikiClient.post(wikiURL, body: {
+          'format': 'json',
+          'action': 'login',
+          'lgname': username,
+          'lgpassword': password,
+          'lgtoken': token,
+        }).then((response) {
+          bool success = Convert.json.decode(response.body)['login']['result'] == 'Success';
+          _loggedIn = success;
+          _userName = username;
+          if (success) {
+            _wikiClient.post(wikiURL, body: {
+              'format': 'json',
+              'action': 'query',
+              'meta': 'tokens',
+            }).then((response) {
+              _csrfToken = Convert.json.decode(response.body)['query']['tokens']['csrftoken'];
+            });
+          }
+          callback(success);
         });
       });
-    });
+    }
   }
 
   Async.Future<List<String>> getAllProjects() async {
@@ -94,22 +88,13 @@ class RevWikiTools {
       throw new WikiNotLoggedInException();
     }
 
-    IO.HttpClientRequest request = await _wikiClient.postUrl(wikiAPI);
-
-    String data = 'format=json&action=ask&query=${Uri.encodeQueryComponent(
-        '[[Category:Project]]|sort=Project Last Update|order=desc|limit=1000')}';
-
-    request.headers.contentType = new IO.ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-    request.headers.contentLength = data.length;
-    request.cookies.addAll(_sessionCookies);
-    request.write(data);
-
-    IO.HttpClientResponse response = await request.close();
-
-    Map body = Convert.json.decode(new String.fromCharCodes((await response.toList()).expand((x) => x).toList()));
-    Map results = body['query']['results'];
-
-    return results.keys.toList();
+    HTTP.Response response = await _wikiClient.post(wikiURL, body: {
+      'format': 'json',
+      'action': 'ask',
+      'query': '[[Category:Project]]|sort=Project Last Update|order=desc|limit=1000',
+    });
+    
+    return Convert.json.decode(response.body)['query']['results'].keys.toList();
   }
 
   void uploadImage(RevImage im, State state) async {
@@ -121,7 +106,6 @@ class RevWikiTools {
     debugPrint('Uploading $im\n as $fileName');
 
     int chunkSize = (im.resizedJpeg.length / (numChunks - 0.5)).round();
-
 
     for (int i = 1; i < numChunks; i++) {
       List<int> chunk = im.resizedJpeg.sublist(i * chunkSize, Math.min((i + 1) * chunkSize, im.resizedJpeg.length));
