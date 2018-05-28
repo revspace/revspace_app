@@ -5,7 +5,6 @@ import 'dart:isolate' as Isolate;
 import 'package:flutter/material.dart';
 import 'package:material_search/material_search.dart';
 import 'package:image/image.dart' as GFX;
-import 'package:crypto/crypto.dart';
 
 import 'main.dart';
 import 'wiki.dart';
@@ -138,7 +137,6 @@ class _RevSendState extends State<RevSend> {
                       _wiki.uploadImage(im, this);
                     } else {
                       // if not, wait for the previous upload to complete before uploading
-                      debugPrint('im ${data[1]} waiting for upload of ${data[1] - 1}!');
                       new Async.Future(() async {
                         while (images[data[1] - 1].progress < 1) {
                           await new Async.Future.delayed(const Duration(milliseconds: 200));
@@ -154,7 +152,7 @@ class _RevSendState extends State<RevSend> {
                           await new Async.Future.delayed(const Duration(milliseconds: 200));
                         }
                       }).then((_null) {
-                        debugPrint('all uploads done! happy now?');
+                        _wiki.editWiki(_selectedProject, images);
                       });
                     }
                   });
@@ -188,12 +186,6 @@ class _RevSendState extends State<RevSend> {
         newImage = GFX.copyRotate(newImage, actualRotation);
       }
       List<int> data = GFX.encodeJpg(newImage, quality: 75);
-      debugPrint('encoded: ${data.length / 1024} kB from ${im.file
-          .readAsBytesSync()
-          .length / 1024 } kB original');
-
-      debugPrint('exact filesize: ${data.length}');
-      debugPrint('sha1: ${sha1.convert(data)}');
 
       send.send([data, i]);
     });

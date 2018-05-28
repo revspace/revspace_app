@@ -31,6 +31,7 @@ class RevImage {
   String description;
   double progress = 0.0;
   List<int> resizedJpeg;
+  String fileNameOnWiki;
 
   RevImage(this.file);
 
@@ -74,7 +75,6 @@ class RevFileImage extends FileImage {
     try {
       imageCodec = await UI.instantiateImageCodec(bytes);
     } catch (e) {
-      debugPrint('Not a valid photo. File: ${file.path} Size: ${bytes.length}');
       selectPhotosState.setState(() {
         images.remove(_ri);
         Scaffold.of(_context).showSnackBar(new SnackBar(

@@ -18,18 +18,18 @@ class RevWikiClient extends Http.BaseClient {
 
   Async.Future<Http.StreamedResponse> send(Http.BaseRequest request) {
     request.headers['user-agent'] = ua;
-    request.headers['cookie'] = RevWikiTools.cookies.join('; ');
+    request.headers['cookie'] = RevWikiTools.getCookies();
     return _inner.send(request);
   }
 }
 
 class RevWikiTools {
-  static final Uri _wikiURL = Uri.parse('https://revspace.nl/api.php');
+  //static final Uri _wikiURL = Uri.parse('https://revspace.nl/api.php');
+  static final Uri _wikiURL = Uri.parse('http://192.168.111.234/api.php');
 
-  //static final Uri _wikiURL = Uri.parse('http://192.168.111.234/api.php');
   static final String _userAgent = 'RevSpaceApp/${RevSpaceApp.version} (Dart ${IO.Platform.version})';
 
-  static List<String> cookies = [];
+  static Map<String, String> cookies = {};
   RevWikiClient _wikiClient;
   bool _loggedIn = false;
   String _userName;
@@ -37,6 +37,25 @@ class RevWikiTools {
 
   RevWikiTools() {
     _wikiClient = new RevWikiClient(_userAgent);
+  }
+
+  static String getCookies() {
+    String result = '';
+    cookies.forEach((k, v) {
+      result += '$k=$v; ';
+    });
+    // result.substring(0, Math.max(0, result.length - 2));
+    return result;
+  }
+
+  static Http.MultipartRequest _getMultipartRequest() {
+    Http.MultipartRequest request = new Http.MultipartRequest('POST', _wikiURL);
+
+    request.headers['user-agent'] = _userAgent;
+    request.headers['cookie'] = '';
+    request.headers['cookie'] = getCookies();
+
+    return request;
   }
 
   Async.Future<void> loginFromSecureStorage(Function callback(bool success)) async {
@@ -60,7 +79,9 @@ class RevWikiTools {
         'action': 'login',
         'lgname': username,
       }).then((response) {
-        cookies.add(response.headers['set-cookie'].toString().split(';')[0]);
+        new RegExp(r'(?:^|,)(\S+?)=(\S+?);').allMatches(response.headers['set-cookie']).forEach((m) {
+          cookies[m.group(1)] = m.group(2);
+        });
         String token = Convert.json.decode(response.body)['login']['token'];
         _wikiClient.post(_wikiURL, body: {
           'format': 'json',
@@ -69,8 +90,8 @@ class RevWikiTools {
           'lgpassword': password,
           'lgtoken': token,
         }).then((response) {
-          new RegExp(r'(?:^|,)(\S+?=.+?);').allMatches(response.headers['set-cookie']).forEach((m) {
-            cookies.add(m.group(1));
+          new RegExp(r'(?:^|,)(\S+?)=(\S+?);').allMatches(response.headers['set-cookie']).forEach((m) {
+            cookies[m.group(1)] = m.group(2);
           });
           bool success = Convert.json.decode(response.body)['login']['result'] == 'Success';
           _loggedIn = success;
@@ -81,7 +102,6 @@ class RevWikiTools {
               'action': 'query',
               'meta': 'tokens',
             }).then((response) {
-
               _csrfToken = Convert.json.decode(response.body)['query']['tokens']['csrftoken'];
             });
           }
@@ -108,10 +128,8 @@ class RevWikiTools {
   void uploadImage(RevImage im, State state) async {
     const int numChunks = 42;
 
-    String fileName = 'RevSpaceApp_IMG_'
+    im.fileNameOnWiki = 'RevSpaceApp_IMG_'
         '${DateTime.now().toIso8601String().replaceAll('T', '_').replaceAll(':', '-')}.jpg';
-
-    debugPrint('Uploading $im\n as $fileName');
 
     int chunkSize = (im.resizedJpeg.length / (numChunks - 0.5)).round();
 
@@ -121,10 +139,7 @@ class RevWikiTools {
       List<int> chunk = im.resizedJpeg.sublist(i * chunkSize, Math.min((i + 1) * chunkSize, im.resizedJpeg.length));
       int thisChunkSize = chunk.length;
 
-      Http.MultipartRequest request = new Http.MultipartRequest('POST', _wikiURL);
-
-      request.headers['user-agent'] = _userAgent;
-      request.headers['cookie'] = cookies.join('; ');
+      Http.MultipartRequest request = _getMultipartRequest();
 
       request.fields.addAll({
         'format': 'json',
@@ -132,7 +147,7 @@ class RevWikiTools {
         'stash': '1',
         'offset': (i * chunkSize).toString(),
         'token': _csrfToken,
-        'filename': fileName,
+        'filename': im.fileNameOnWiki,
         'filesize': im.resizedJpeg.length.toString(),
       });
       if (fileKey != null) {
@@ -142,7 +157,7 @@ class RevWikiTools {
       request.files.add(new Http.MultipartFile.fromBytes(
         'chunk',
         chunk,
-        filename: fileName,
+        filename: im.fileNameOnWiki,
         contentType: new HttpParser.MediaType('image', 'jpeg'),
       ));
 
@@ -159,19 +174,16 @@ class RevWikiTools {
         im.progress = Math.min(im.progress += 0.8 / numChunks, 1.0);
       });
       if (result == 'Success') {
-        Http.MultipartRequest request = new Http.MultipartRequest('POST', _wikiURL);
-
-        request.headers['user-agent'] = _userAgent;
-        request.headers['cookie'] = cookies.join('; ');
+        Http.MultipartRequest request = _getMultipartRequest();
 
         request.fields.addAll({
           'format': 'json',
           'action': 'upload',
           'token': _csrfToken,
-          'filename': fileName,
+          'filename': im.fileNameOnWiki,
           'filekey': fileKey,
-          'comment': '${im.description}\n\nUploaded using $_userAgent',
-          'text': '${im.description}\n\nUploaded using $_userAgent',
+          'comment': '${im.description}\n\nUploaded using [[RevSpace App]] ${RevSpaceApp.version}',
+          'text': '${im.description}\n\nUploaded using [[RevSpace App]] ${RevSpaceApp.version}',
         });
 
         Http.StreamedResponse response = await request.send();
@@ -179,12 +191,50 @@ class RevWikiTools {
         Map responseBody = Convert.jsonDecode(
           new String.fromCharCodes((await response.stream.toList()).expand((x) => x).toList()),
         );
+
+        if (responseBody['upload']['result'] == 'Warning') {
+          if (responseBody['upload'].containsKey('warnings')) {
+            if (responseBody['upload']['warnings'].containsKey('duplicate')) {
+              im.fileNameOnWiki = responseBody['upload']['warnings']['duplicate'][0];
+            } else if (responseBody['upload']['warnings'].containsKey('duplicate-archive')) {
+              debugPrint('Duplicate-archive! '
+                  '${im.fileNameOnWiki} == ${responseBody['upload']['warnings']['duplicate-archive']}');
+              // TODO: handle duplicates of previously removed images.
+              /* 'The photo "${im.description}" has already been uploaded to the wiki in the past '
+                 'and has been deleted. Unfortunately, we cannot re-upload previously deleted photos. '
+                 'Please contact a wiki administrator if you need further assistance.' */
+            }
+          }
+        }
       }
     }
 
-    debugPrint('Done! $im');
     state.setState(() {
       im.progress = 1.0;
+    });
+  }
+
+  void editWiki(String pageName, List<RevImage> images) async {
+    String text = '\n\n----\n'
+        'Photos added using the [[RevSpace App]] ${RevSpaceApp.version} on '
+        '${DateTime.now().toIso8601String().replaceAll('T', ' at ').split('.')[0]}\n'
+        '<gallery>\n';
+
+    images.forEach((im) {
+      text += '${im.fileNameOnWiki}|${im.description}\n';
+    });
+
+    text += '<\/gallery>';
+
+    Http.Response response = await _wikiClient.post(_wikiURL, body: {
+      'format': 'json',
+      'action': 'edit',
+      'token': _csrfToken,
+      'title': pageName,
+      'summary': 'Added ${images.length} photo${(images.length > 1) ? 's' : ''}'
+          ' using [[RevSpaceApp]] ${RevSpaceApp.version}',
+      'bot': 'true',
+      'appendtext': text,
     });
   }
 }
