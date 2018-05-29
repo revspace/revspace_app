@@ -8,7 +8,7 @@ dependencies:
   url_launcher: ^3.0.1
   flutter_secure_storage: ^3.0.0
   material_search: ^0.2.6
-  image: ^2.0.0
+  image: ^2.0.1
   http: ^0.11.3+16
 
 dev_dependencies:
