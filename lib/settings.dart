@@ -12,7 +12,7 @@ import 'wiki.dart';
 class RevSettings extends StatefulWidget {
   static const String routeName = '/settings';
   final FlutterSecureStorage _secureStorage = new FlutterSecureStorage();
-  final bool loginFailure;
+  final bool loginFailure = false;
 
   RevSettings({bool loginFailure = false}) : super();
 
